@@ -1,6 +1,7 @@
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
+import socket
 
 
 class Client:
@@ -15,3 +16,24 @@ class Client:
         # (see https://www.pycryptodome.org/en/latest/src/cipher/oaep.html)
         cipher_rsa = PKCS1_OAEP.new(recipient_key)
         return cipher_rsa.encrypt(self.session_key)
+
+    # chat client
+    def or_client(self):
+        host = '127.0.0.1'
+        port = 1234
+        MAX_SIZE = 1024
+
+        # connecting to server
+        client_socket = socket.socket()
+        client_socket.connect((host, port))
+
+        # welcome message
+        welcome = client_socket.recv(MAX_SIZE).decode()
+        print(welcome)
+
+        # message handling
+        while True:
+            print("Received: ", client_socket.recv(MAX_SIZE).decode())
+            message = input(">>").encode()
+            client_socket.send(message)
+            print("message sent, wait for response")

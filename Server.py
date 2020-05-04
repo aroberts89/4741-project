@@ -1,5 +1,6 @@
 import asyncio
 import pickle
+from base64 import b64encode
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
@@ -34,7 +35,9 @@ class Server:
 
         # Clients send the session key immediately after connecting
         encrypted_session_key = await reader.read(1024)
+        print("Encrypted session key: " + b64encode(encrypted_session_key).decode('utf-8'))
         decrypted_session_key = self.decrypt_session_key(encrypted_session_key)
+        print("Decrypted session key: " + b64encode(decrypted_session_key).decode('utf-8'))
         writer.write("ACK".encode('utf-8'))
         await writer.drain()
 

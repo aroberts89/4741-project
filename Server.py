@@ -4,7 +4,7 @@ import pickle
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
-from ORMessenger.Message import Message
+from Message import Message
 
 
 class Server:
@@ -23,7 +23,7 @@ class Server:
         for socket, conn in self.conns.items():
             if (socket != source_addr):
                 # Encrypt message with this connection's session key
-                payload = Message.encrypt(message, conn['session_key'])
+                payload = Message.encrypt(f"{source_addr}: {message}", conn['session_key'])
                 pickled = pickle.dumps(payload)
                 conn['writer'].write(pickled)
                 await conn['writer'].drain()
@@ -58,4 +58,4 @@ class Server:
 
 
 if __name__ == "__main__":
-    asyncio.run(Server("../private.pem").start())
+    asyncio.run(Server("private.pem").start())

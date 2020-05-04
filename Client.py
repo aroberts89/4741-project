@@ -6,7 +6,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from aioconsole import ainput
 
-from ORMessenger.Message import Message
+from Message import Message
 
 
 class Client:
@@ -52,4 +52,4 @@ class Client:
         await asyncio.create_task(self.send_message_loop())
 
 if __name__ == "__main__":
-    asyncio.run(Client("127.0.0.1", 8888, "../receiver.pem").start())
+    asyncio.run(Client("127.0.0.1", 8888, "receiver.pem").start())

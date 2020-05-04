@@ -1,7 +1,10 @@
 import asyncio
+import pickle
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
+
+from ORMessenger.Message import Message
 
 
 class Server:
@@ -17,16 +20,26 @@ class Server:
 
     async def broadcast(self, source_addr, message):
         print(f"Broadcasting {source_addr}: {message}")
-        for socket, writer in self.conns.items():
+        for socket, conn in self.conns.items():
             if (socket != source_addr):
-                writer.write(f"{source_addr}: {message}".encode('utf-8'))
-                await writer.drain()
+                # Encrypt message with this connection's session key
+                payload = Message.encrypt(message, conn['session_key'])
+                pickled = pickle.dumps(payload)
+                conn['writer'].write(pickled)
+                await conn['writer'].drain()
 
     async def handle_new_conn(self, reader, writer):
-        # Add new connection to connections dictionary
         addr = writer.get_extra_info('peername')
         print(f"New connection from {addr}")
-        self.conns[addr] = writer
+
+        # Clients send the session key immediately after connecting
+        encrypted_session_key = await reader.read(1024)
+        decrypted_session_key = self.decrypt_session_key(encrypted_session_key)
+        writer.write("ACK".encode('utf-8'))
+        await writer.drain()
+
+        # Add new connection info to connections dictionary
+        self.conns[addr] = {'writer': writer, 'session_key': decrypted_session_key}
 
         while True:
             data = await reader.read(1024)

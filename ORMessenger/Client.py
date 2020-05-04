@@ -1,10 +1,12 @@
 import asyncio
-import sys
+import pickle
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from aioconsole import ainput
+
+from ORMessenger.Message import Message
 
 
 class Client:
@@ -24,8 +26,9 @@ class Client:
 
     async def receive_message_loop(self):
         while True:
-            data = await self.reader.read(1024)
-            message = data.decode('utf-8')
+            pickled = await self.reader.read(1024)
+            nonce, ciphertext, tag = pickle.loads(pickled)
+            message = Message.decrypt(nonce, ciphertext, tag, self.session_key)
             print(message)
 
     async def send_message_loop(self):
@@ -40,6 +43,11 @@ class Client:
             '127.0.0.1', 8888)
         self.reader = reader
         self.writer = writer
+        # First, create and send our session key
+        self.writer.write(self.encrypt_session_key())
+        await self.writer.drain()
+        # Wait for server's acknowledgement
+        await self.reader.read(1024)
         asyncio.create_task(self.receive_message_loop())
         await asyncio.create_task(self.send_message_loop())
 

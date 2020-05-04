@@ -1,8 +1,8 @@
 from base64 import b64encode
 
-from ORMessenger.Client import Client
-from ORMessenger.Message import Message
-from ORMessenger.Server import Server
+from Client import Client
+from Message import Message
+from Server import Server
 
 # Client generates a random session key on construction
 client = Client("receiver.pem")

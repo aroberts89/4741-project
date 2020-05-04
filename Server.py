@@ -35,9 +35,9 @@ class Server:
 
         # Clients send the session key immediately after connecting
         encrypted_session_key = await reader.read(1024)
-        print("Encrypted session key: " + b64encode(encrypted_session_key).decode('utf-8'))
+        print(f"DEMO: Encrypted session key: {b64encode(encrypted_session_key).decode('utf-8')}")
         decrypted_session_key = self.decrypt_session_key(encrypted_session_key)
-        print("Decrypted session key: " + b64encode(decrypted_session_key).decode('utf-8'))
+        print(f"DEMO: Decrypted session key: {b64encode(decrypted_session_key).decode('utf-8')}")
         writer.write("ACK".encode('utf-8'))
         await writer.drain()
 
@@ -45,8 +45,9 @@ class Server:
         self.conns[addr] = {'writer': writer, 'session_key': decrypted_session_key}
 
         while True:
-            data = await reader.read(1024)
-            message = data.decode('utf-8')
+            pickled = await reader.read(1024)
+            nonce, ciphertext, tag = pickle.loads(pickled)
+            message = Message.decrypt(nonce, ciphertext, tag, decrypted_session_key)
             await self.broadcast(addr, message)
 
     async def start(self):

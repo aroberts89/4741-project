@@ -35,8 +35,9 @@ class Client:
     async def send_message_loop(self):
         while True:
             message = await ainput()
-            # input chomps the newline
-            self.writer.write(message.encode('utf-8'))
+            payload = Message.encrypt(message, self.session_key)
+            pickled = pickle.dumps(payload)
+            self.writer.write(pickled)
             await self.writer.drain()
 
     async def start(self):
@@ -45,9 +46,9 @@ class Client:
         self.reader = reader
         self.writer = writer
         # First, create and send our session key
-        print("Session key: " + b64encode(self.session_key).decode('utf-8'))
+        print(f"DEMO: Session key: {b64encode(self.session_key).decode('utf-8')}")
         encrypted_session_key = self.encrypt_session_key()
-        print("Encrypted session key: " + b64encode(encrypted_session_key).decode('utf-8'))
+        print(f"DEMO: Encrypted session key: {b64encode(encrypted_session_key).decode('utf-8')}")
         self.writer.write(encrypted_session_key)
         await self.writer.drain()
         # Wait for server's acknowledgement

@@ -1,13 +1,18 @@
+import asyncio
+import sys
+
+from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
-from Crypto.Cipher import AES, PKCS1_OAEP
-import socket
+from aioconsole import ainput
 
 
 class Client:
-    def __init__(self, public_key_path):
+    def __init__(self, server_host, server_port, public_key_path):
         self.session_key = get_random_bytes(32)
         self.public_key_path = public_key_path
+        self.server_host = server_host
+        self.server_port = server_port
 
     # Returns this instance's session key, encrypted with the server's public key
     def encrypt_session_key(self):
@@ -17,23 +22,26 @@ class Client:
         cipher_rsa = PKCS1_OAEP.new(recipient_key)
         return cipher_rsa.encrypt(self.session_key)
 
-    # chat client
-    def or_client(self):
-        host = '127.0.0.1'
-        port = 1234
-        MAX_SIZE = 1024
-
-        # connecting to server
-        client_socket = socket.socket()
-        client_socket.connect((host, port))
-
-        # welcome message
-        welcome = client_socket.recv(MAX_SIZE).decode()
-        print(welcome)
-
-        # message handling
+    async def receive_message_loop(self):
         while True:
-            print("Received: ", client_socket.recv(MAX_SIZE).decode())
-            message = input(">>").encode()
-            client_socket.send(message)
-            print("message sent, wait for response")
+            data = await self.reader.read(1024)
+            message = data.decode('utf-8')
+            print(message)
+
+    async def send_message_loop(self):
+        while True:
+            message = await ainput()
+            # input chomps the newline
+            self.writer.write(message.encode('utf-8'))
+            await self.writer.drain()
+
+    async def start(self):
+        reader, writer = await asyncio.open_connection(
+            '127.0.0.1', 8888)
+        self.reader = reader
+        self.writer = writer
+        asyncio.create_task(self.receive_message_loop())
+        await asyncio.create_task(self.send_message_loop())
+
+if __name__ == "__main__":
+    asyncio.run(Client("127.0.0.1", 8888, "../receiver.pem").start())
